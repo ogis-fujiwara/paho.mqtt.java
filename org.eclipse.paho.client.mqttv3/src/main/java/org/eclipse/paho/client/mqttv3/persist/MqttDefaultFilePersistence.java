@@ -29,6 +29,7 @@ import org.eclipse.paho.client.mqttv3.MqttPersistable;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.internal.FileLock;
 import org.eclipse.paho.client.mqttv3.internal.MqttPersistentData;
+import org.eclipse.paho.client.mqttv3.IMqttOpenPersistenceCallback;
 
 /**
  * An implementation of the {@link MqttClientPersistence} interface that provides
@@ -50,6 +51,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	private File dataDir;
 	private File clientDir = null;
 	private FileLock fileLock = null;
+	private IMqttOpenPersistenceCallback openCallback = null;
 	
 	//TODO
 	private static FilenameFilter FILENAME_FILTER;
@@ -71,8 +73,14 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	 */
 	public MqttDefaultFilePersistence(String directory) { //throws MqttPersistenceException {
 		dataDir = new File(directory);
+		this.openCallback = new DefaultOpenPersistenceCallback();
 	}
-	
+
+	@Override
+	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback openCallback) {
+		this.openCallback = openCallback;
+	}
+
 	public void open(String clientId, String theConnection) throws MqttPersistenceException {
 		
 		if (dataDir.exists() && !dataDir.isDirectory()) {
@@ -86,29 +94,14 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 			throw new MqttPersistenceException();
 		}
 		
-		
-		StringBuffer keyBuffer = new StringBuffer();
-		for (int i=0;i<clientId.length();i++) {
-			char c = clientId.charAt(i);
-			if (isSafeChar(c)) {
-				keyBuffer.append(c);
-			}
-		}
-		keyBuffer.append("-");
-		for (int i=0;i<theConnection.length();i++) {
-			char c = theConnection.charAt(i);
-			if (isSafeChar(c)) {
-				keyBuffer.append(c);
-			}
-		}
+		String key = openCallback.openDirectory(clientId, theConnection);
 
 		synchronized (this) {
 			if (clientDir == null) {
-				String key = keyBuffer.toString();
 				clientDir = new File(dataDir, key);
 
 				if (!clientDir.exists()) {
-					clientDir.mkdir();
+					clientDir.mkdirs();
 				}
 			}
 
@@ -146,7 +139,8 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 			}
 
 			if (getFiles().length == 0) {
-				clientDir.delete();
+				// clientDir.delete();
+				deleteDirectories(clientDir, dataDir);
 			}
 			clientDir = null;
 		}
@@ -298,6 +292,43 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 		for (int i=0; i<files.length; i++) {
 			files[i].delete();
 		}
+
 		clientDir.delete();
+	}
+
+	private void deleteDirectories(File target, File base) {
+		if (! target.getAbsolutePath().equals(base.getAbsolutePath())) {
+			File[] files = target.listFiles();
+			for (int i=0; i<files.length; i++) {
+				files[i].delete();
+			}
+			target.delete();
+			int lastPosSeperator = target.getAbsolutePath().lastIndexOf("/");
+			if (lastPosSeperator != -1) {
+				File newTarget = new File(target.getAbsolutePath().substring(0, lastPosSeperator));
+				deleteDirectories(newTarget, base);
+			}
+		}
+	}
+	private class DefaultOpenPersistenceCallback implements IMqttOpenPersistenceCallback {
+		@Override
+		public String openDirectory(String clientId, String theConnection) {
+			StringBuffer keyBuffer = new StringBuffer();
+			for (int i=0;i<clientId.length();i++) {
+				char c = clientId.charAt(i);
+				if (isSafeChar(c)) {
+					keyBuffer.append(c);
+				}
+			}
+			keyBuffer.append("-");
+			for (int i=0;i<theConnection.length();i++) {
+				char c = theConnection.charAt(i);
+				if (isSafeChar(c)) {
+					keyBuffer.append(c);
+				}
+			}
+
+			return keyBuffer.toString();
+		}
 	}
 }

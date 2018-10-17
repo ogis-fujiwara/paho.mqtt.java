@@ -99,4 +99,6 @@ public interface MqttClientPersistence {
 	 * @throws MqttPersistenceException if there was a problem checking whether they key existed.
 	 */
 	public boolean containsKey(String key) throws MqttPersistenceException;
+
+	public void setOpenPersistenceCallback(org.eclipse.paho.client.mqttv3.IMqttOpenPersistenceCallback callback);
 }
