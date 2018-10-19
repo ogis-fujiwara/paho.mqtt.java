@@ -72,18 +72,26 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	 */
 	public MqttDefaultFilePersistence(String directory) { //throws MqttPersistenceException {
 		dataDir = new File(directory);
-        callback = new DefaultCreateClientDirCallback();
+		callback = new DefaultCreateClientDirCallback();
 	}
 
-    /**
-     * Create an file-based persistent data store within the specified directory.
-     * @param directory the directory to use.
-     * @param callback  the callback to customize create clientDir.
-     */
+	/**
+	 * Create an file-based persistent data store within the specified directory.
+	 * @param callback the callback to customize create clientDir.
+	 */
+	public MqttDefaultFilePersistence(IMqttCreateClientDirCallback callback)  {
+		this(System.getProperty("user.dir"), callback);
+	}
+
+	/**
+	 * Create an file-based persistent data store within the specified directory.
+	 * @param directory the directory to use.
+	 * @param callback the callback to customize create clientDir.
+	 */
 	public MqttDefaultFilePersistence(String directory, IMqttCreateClientDirCallback callback) {
-	    dataDir = new File(directory);
-	    this.callback = callback;
-    }
+		dataDir = new File(directory);
+		this.callback = callback;
+	}
 
 	public void open(String clientId, String theConnection) throws MqttPersistenceException {
 		
