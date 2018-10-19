@@ -95,5 +95,5 @@ public class TestMemoryPersistence implements MqttClientPersistence {
 	}
 
 	@Override
-	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback openCallback) {}
+	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback callback) {}
 }

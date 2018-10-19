@@ -16,7 +16,6 @@
 package org.eclipse.paho.client.mqttv3.persist;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
@@ -51,7 +50,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	private File dataDir;
 	private File clientDir = null;
 	private FileLock fileLock = null;
-	private IMqttOpenPersistenceCallback openCallback = null;
+	private IMqttOpenPersistenceCallback callbackOpen = null;
 	
 	//TODO
 	private static FilenameFilter FILENAME_FILTER;
@@ -73,12 +72,12 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	 */
 	public MqttDefaultFilePersistence(String directory) { //throws MqttPersistenceException {
 		dataDir = new File(directory);
-		this.openCallback = new DefaultOpenPersistenceCallback();
+		this.callbackOpen = new DefaultOpenPersistenceCallback();
 	}
 
 	@Override
-	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback openCallback) {
-		this.openCallback = openCallback;
+	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback callback) {
+		this.callbackOpen = callback;
 	}
 
 	public void open(String clientId, String theConnection) throws MqttPersistenceException {
@@ -94,7 +93,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 			throw new MqttPersistenceException();
 		}
 		
-		String key = openCallback.openDirectory(clientId, theConnection);
+		String key = callbackOpen.openDirectory(clientId, theConnection);
 
 		synchronized (this) {
 			if (clientDir == null) {
@@ -139,8 +138,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 			}
 
 			if (getFiles().length == 0) {
-				// clientDir.delete();
-				deleteDirectories(clientDir, dataDir);
+				deleteClientDir();
 			}
 			clientDir = null;
 		}
@@ -296,20 +294,35 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 		clientDir.delete();
 	}
 
-	private void deleteDirectories(File target, File base) {
-		if (! target.getAbsolutePath().equals(base.getAbsolutePath())) {
+	private void deleteClientDir() {
+		File target = new File(clientDir.getAbsolutePath());
+
+		while (!dataDir.equals(target.getParentFile())) {
+			target = target.getParentFile();
+		}
+
+		deleteDirectoryImpl(target);
+	}
+
+	private void deleteDirectoryImpl(File target) {
+		if (!target.exists()) {
+			return;
+		} else {
 			File[] files = target.listFiles();
-			for (int i=0; i<files.length; i++) {
-				files[i].delete();
+			for (int i = 0; i < files.length; i++) {
+				if (files[i].isFile()) {
+					files[i].delete();
+				} else {
+					deleteDirectoryImpl(files[i]);
+				}
 			}
-			target.delete();
-			int lastPosSeperator = target.getAbsolutePath().lastIndexOf("/");
-			if (lastPosSeperator != -1) {
-				File newTarget = new File(target.getAbsolutePath().substring(0, lastPosSeperator));
-				deleteDirectories(newTarget, base);
+
+			if (target.listFiles().length == 0) {
+				target.delete();
 			}
 		}
 	}
+
 	private class DefaultOpenPersistenceCallback implements IMqttOpenPersistenceCallback {
 		@Override
 		public String openDirectory(String clientId, String theConnection) {
