@@ -28,7 +28,7 @@ import org.eclipse.paho.client.mqttv3.MqttPersistable;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.internal.FileLock;
 import org.eclipse.paho.client.mqttv3.internal.MqttPersistentData;
-import org.eclipse.paho.client.mqttv3.IMqttOpenPersistenceCallback;
+import org.eclipse.paho.client.mqttv3.IMqttCreateClientDirCallback;
 
 /**
  * An implementation of the {@link MqttClientPersistence} interface that provides
@@ -50,7 +50,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	private File dataDir;
 	private File clientDir = null;
 	private FileLock fileLock = null;
-	private IMqttOpenPersistenceCallback callbackOpen = null;
+	private IMqttCreateClientDirCallback callback;
 	
 	//TODO
 	private static FilenameFilter FILENAME_FILTER;
@@ -72,13 +72,18 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 	 */
 	public MqttDefaultFilePersistence(String directory) { //throws MqttPersistenceException {
 		dataDir = new File(directory);
-		this.callbackOpen = new DefaultOpenPersistenceCallback();
+        callback = new DefaultCreateClientDirCallback();
 	}
 
-	@Override
-	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback callback) {
-		this.callbackOpen = callback;
-	}
+    /**
+     * Create an file-based persistent data store within the specified directory.
+     * @param directory the directory to use.
+     * @param callback  the callback to customize create clientDir.
+     */
+	public MqttDefaultFilePersistence(String directory, IMqttCreateClientDirCallback callback) {
+	    dataDir = new File(directory);
+	    this.callback = callback;
+    }
 
 	public void open(String clientId, String theConnection) throws MqttPersistenceException {
 		
@@ -93,7 +98,7 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 			throw new MqttPersistenceException();
 		}
 		
-		String key = callbackOpen.openDirectory(clientId, theConnection);
+		String key = callback.createClientDir(clientId, theConnection);
 
 		synchronized (this) {
 			if (clientDir == null) {
@@ -323,9 +328,9 @@ public class MqttDefaultFilePersistence implements MqttClientPersistence {
 		}
 	}
 
-	private class DefaultOpenPersistenceCallback implements IMqttOpenPersistenceCallback {
+	private class DefaultCreateClientDirCallback implements IMqttCreateClientDirCallback {
 		@Override
-		public String openDirectory(String clientId, String theConnection) {
+		public String createClientDir(String clientId, String theConnection) {
 			StringBuffer keyBuffer = new StringBuffer();
 			for (int i=0;i<clientId.length();i++) {
 				char c = clientId.charAt(i);

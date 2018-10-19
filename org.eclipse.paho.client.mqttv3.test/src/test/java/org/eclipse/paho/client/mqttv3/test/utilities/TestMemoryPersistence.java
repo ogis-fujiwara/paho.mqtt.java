@@ -18,7 +18,6 @@ package org.eclipse.paho.client.mqttv3.test.utilities;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
-import org.eclipse.paho.client.mqttv3.IMqttOpenPersistenceCallback;
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.eclipse.paho.client.mqttv3.MqttPersistable;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
@@ -93,7 +92,4 @@ public class TestMemoryPersistence implements MqttClientPersistence {
 	public boolean containsKey(String key) throws MqttPersistenceException {
 		return data.containsKey(key);
 	}
-
-	@Override
-	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback callback) {}
 }

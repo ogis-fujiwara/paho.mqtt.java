@@ -21,7 +21,6 @@ import java.util.Hashtable;
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.eclipse.paho.client.mqttv3.MqttPersistable;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
-import org.eclipse.paho.client.mqttv3.IMqttOpenPersistenceCallback;
 
 /**
  * Persistence that uses memory
@@ -91,7 +90,4 @@ public class MemoryPersistence implements MqttClientPersistence {
 	public boolean containsKey(String key) throws MqttPersistenceException {
 		return data.containsKey(key);
 	}
-
-	@Override
-	public void setOpenPersistenceCallback(IMqttOpenPersistenceCallback callback) {}
 }
